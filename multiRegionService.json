@@ -1,0 +1,122 @@
+{
+    "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "deploymentRegions": {
+            "type": "array"
+        }
+    },
+    "variables": {
+        "storageVersion": "2017-06-01",
+        "serverFarmVersion": "2016-09-01",
+        "webSiteVersion": "2016-08-01",
+        "copy": [
+            {
+              "name": "regionalResources",
+              "count": "[length(parameters('deploymentRegions'))]",
+              "input": {
+                  "location": "[parameters('deploymentRegions')[copyIndex('regionalResources')]]",
+                  "storageName": "[concat(parameters('deploymentRegions')[copyIndex('regionalResources')], uniqueString(resourceGroup().id))]",
+                  "storageResourceId": "[resourceId('Microsoft.Storage/storageAccounts', concat(parameters('deploymentRegions')[copyIndex('regionalResources')], uniqueString(resourceGroup().id)))]",
+                  "serverFarmName": "[concat(parameters('deploymentRegions')[copyIndex('regionalResources')], '-farm-', uniqueString(resourceGroup().id))]",
+                  "serverFarmResourceId": "[resourceId('Microsoft.Web/serverfarms', concat(parameters('deploymentRegions')[copyIndex('regionalResources')], '-farm-', uniqueString(resourceGroup().id)))]",
+                  "websiteName": "[concat(parameters('deploymentRegions')[copyIndex('regionalResources')], '-web-', uniqueString(resourceGroup().id))]",
+                  "websiteResourceId": "[resourceId('Microsoft.Web/sites', concat(parameters('deploymentRegions')[copyIndex('regionalResources')], '-web-', uniqueString(resourceGroup().id)))]"
+              }
+            }
+        ]
+    },
+    "resources": [
+        {
+            "apiVersion": "[variables('storageVersion')]",
+            "type": "Microsoft.Storage/storageAccounts",
+            "sku": {
+                "name": "Standard_LRS",
+                "tier": "Standard"
+            },
+            "kind": "Storage",
+            "name": "[variables('regionalResources')[copyIndex()].storageName]",
+            "location": "[variables('regionalResources')[copyIndex()].location]",
+            "tags": {},
+            "scale": null,
+            "properties": {
+                "supportsHttpsTrafficOnly": false,
+                "encryption": {
+                    "services": {
+                        "file": {
+                            "enabled": true
+                        },
+                        "blob": {
+                            "enabled": true
+                        }
+                    },
+                    "keySource": "Microsoft.Storage"
+                }
+            },
+            "copy": {
+                "name": "storageCopy",
+                "count": "[length(variables('regionalResources'))]"
+            },
+            "dependsOn": []
+        },
+        {
+            "type": "Microsoft.Web/serverfarms",
+            "name": "[variables('regionalResources')[copyIndex()].serverFarmName]",
+            "apiVersion": "[variables('serverFarmVersion')]",
+            "location": "[variables('regionalResources')[copyIndex()].location]",
+            "sku": {
+                "name": "S1"
+            },
+            "properties": {},
+            "copy": {
+                "name": "serverFarmCopy",
+                "count": "[length(variables('regionalResources'))]"
+            }
+        },
+        {
+            "apiVersion": "[variables('webSiteVersion')]",
+            "type": "Microsoft.Web/sites",
+            "name": "[variables('regionalResources')[copyIndex()].webSiteName]",
+            "location": "[variables('regionalResources')[copyIndex()].location]",
+            "dependsOn": [
+                "[variables('regionalResources')[copyIndex()].serverFarmResourceId]",
+                "storageCopy"
+            ],
+            "properties": {
+                "serverFarmId": "[variables('regionalResources')[copyIndex()].serverFarmResourceId]",
+                "siteConfig": {
+                    "copy": [
+                        {
+                            "name": "connectionStrings",
+                            "count": "[length(variables('regionalResources'))]",
+                            "input": {
+                                "name": "[concat('storage-', variables('regionalResources')[copyIndex('connectionStrings')].location)]",
+                                "connectionString": "[concat('DefaultEndpointsProtocol=https;BlobEndpoint=', reference(variables('regionalResources')[copyIndex('connectionStrings')].storageResourceId, variables('storageVersion')).primaryEndpoints.blob, ';AccountName=',variables('regionalResources')[copyIndex('connectionStrings')].storageName,';AccountKey=', listKeys(variables('regionalResources')[copyIndex('connectionStrings')].storageResourceId, providers('Microsoft.Storage', 'storageAccounts').apiVersions[0]).keys[0].value)]",
+                                "type": 3
+                            }
+                        }
+                    ]
+                }
+            },
+            "resources": [
+                {
+                    "name": "appsettings",
+                    "type": "config",
+                    "apiVersion": "2015-08-01",
+                    "dependsOn": [
+                        "[variables('regionalResources')[copyIndex()].webSiteResourceId]"
+                    ],
+                    "properties": {
+                        "PRIMARY_STORAGE_CONNECTION_STRING": "[concat('storage-', parameters('deploymentRegions')[0])]",
+                        "REGIONAL_STORAGE_CONNECTION_STRING": "[concat('storage-', variables('regionalResources')[copyIndex()].location)]"
+                    }
+                  }
+            ],
+            "copy": {
+                "name": "webSiteCopy",
+                "count": "[length(variables('regionalResources'))]"
+            }
+        }
+    ],
+    "outputs": {}
+}
