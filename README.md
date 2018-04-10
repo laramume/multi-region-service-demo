@@ -49,9 +49,11 @@ If simultaneous access to all storage accounts is needed, it's a matter of readi
 ### Example
 
 Suppose, the service is deployed to 3 Azure regions: East US, North Europe and West US.
+
 ![](img/resources.png)
 
 If East US is the location of the primary storage, connection Strings and App Settings of the App Service deployed in North Europe would look like this:
+
 ![](img/settings.png)
 
 ## Proof-of-concept implementation
@@ -60,21 +62,18 @@ To learn more about the resource iteration techniques employed in the [example A
 
 
 - [Resource iteration](https://docs.microsoft.com/en-us/azure/azure-resource-manager/resource-group-create-multiple#resource-iteration)
-    
-    - Creating regional instances of various resources
+     (creating regional instances of various resources)
 
 
 - [Property iteration](https://docs.microsoft.com/en-us/azure/azure-resource-manager/resource-group-create-multiple#property-iteration)
-    
-    - Creating a variable number of Connection Strings
+    (creating a variable number of Connection Strings)
 
 
-- [Variable iteration](https://docs.microsoft.com/en-us/azure/azure-resource-manager/resource-group-create-multiple#variable-iteration)
-    
-    - Generating an array of all regional resources along with their attributes
+- [Variable iteration](https://docs.microsoft.com/en-us/azure/azure-resource-manager/resource-group-create-multiple#variable-iteration) 
+    (generating an array of all regional resources along with their attributes)
 
 The template expects one parameter, which is an array of valid Azure regions. By convention, the primary storage account is the one created in the region that appears first in that array.
 
 ## Conclusion
 
-The proposed solution satisfies all the requirements. As mentioned earlier, the feature requiring simultaneous write access to all regional storage accounts is on a deprecation path. There are, however, other benefits from geving the service acccess to all available regional storage accounts. In particular, that can be leveraged to enable a fail-over when a regional storage account becomes unavailable. It can also enable scenarios where the service deployed to region A needs to perform work in region B (e.g., a user in North America, needs to copy blobs between accounts in Australia).
+The proposed solution satisfies all the requirements. As mentioned earlier, the feature requiring simultaneous write access to all regional storage accounts is on a deprecation path. There are, however, other benefits from geving the service read acccess to all available regional storage accounts. In particular, that can be leveraged to enable a failover when a regional storage account becomes unavailable. It can also enable scenarios where the service deployed to region A needs to perform work in region B (e.g., a user in North America, needs to copy blobs between accounts in Australia).
