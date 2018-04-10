@@ -72,6 +72,8 @@ To learn more about the resource iteration techniques employed in the [example A
 - [Variable iteration](https://docs.microsoft.com/en-us/azure/azure-resource-manager/resource-group-create-multiple#variable-iteration) 
     (generating an array of all regional resources along with their attributes)
 
+- [Depend on resources in a loop](https://docs.microsoft.com/en-us/azure/azure-resource-manager/resource-group-create-multiple#depend-on-resources-in-a-loop)
+
 The template expects one parameter, which is an array of valid Azure regions. By convention, the primary storage account is the one created in the region that appears first in that array.
 
 ## Conclusion
